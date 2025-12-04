@@ -1,0 +1,86 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras import layers, models
+
+# ------------------------------------------------
+# 1. LOAD THE CSV (USE YOUR COPY-PASTE PATH HERE)
+# ------------------------------------------------
+# Example:
+# path = r"C:\Users\sharm\Downloads\salary_data.csv"
+# Replace this with your actual copied path:
+path = r"salary_data.csv"   # if the file is in the same folder as your .py/.ipynb
+
+df = pd.read_csv(path)
+
+print("First 5 rows of data:")
+print(df.head())
+print("\nColumns:", df.columns)
+
+# ------------------------------------------------
+# 2. SELECT FEATURES & TARGET
+# ------------------------------------------------
+# Adjust column names here if needed:
+# For example, if columns are "YearsExperience" and "Salary"
+X = df[["YearsExperience"]].values   # input feature (2D)
+y = df["Salary"].values             # target (1D)
+
+# ------------------------------------------------
+# 3. TRAIN-TEST SPLIT
+# ------------------------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# ------------------------------------------------
+# 4. FEATURE SCALING (IMPORTANT FOR NEURAL NETWORKS)
+# ------------------------------------------------
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# ------------------------------------------------
+# 5. BUILD THE NEURAL NETWORK MODEL
+# ------------------------------------------------
+model = models.Sequential([
+    layers.Dense(16, activation='relu', input_shape=(X_train_scaled.shape[1],)),
+    layers.Dense(8, activation='relu'),
+    layers.Dense(1)   # regression → no activation (linear)
+])
+
+model.compile(
+    optimizer='adam',
+    loss='mse',        # mean squared error for regression
+    metrics=['mae']    # mean absolute error for easier interpretation
+)
+
+model.summary()
+
+# ------------------------------------------------
+# 6. TRAIN THE MODEL
+# ------------------------------------------------
+history = model.fit(
+    X_train_scaled,
+    y_train,
+    epochs=25,
+    batch_size=4,
+    verbose=1,
+    validation_split=0.1
+)
+
+# ------------------------------------------------
+# 7. EVALUATE ON TEST DATA
+# ------------------------------------------------
+loss, mae = model.evaluate(X_test_scaled, y_test, verbose=0)
+print(f"\nTest MAE (Mean Absolute Error): {mae:.2f}")
+
+# ------------------------------------------------
+# 8. MAKE A PREDICTION FOR NEW EXPERIENCE VALUE
+# ------------------------------------------------
+years = float(input("\nEnter years of experience to predict salary (e.g., 5): "))
+years_array = np.array([[years]])
+years_scaled = scaler.transform(years_array)
+
+predicted_salary = model.predict(years_scaled)[0][0]
+print(f"Predicted Salary for {years} years of experience: {predicted_salary:.2f}")
