@@ -1,0 +1,54 @@
+from ultralytics import YOLO
+import matplotlib.pyplot as plt
+from PIL import Image
+
+# 1. Load a YOLOv8 model (pretrained on COCO: includes many animals)
+model = YOLO("yolov8m.pt")   # or "yolov8n.pt" for faster, "yolov8l/x.pt" for more accuracy
+
+# 2. Ask for local image path
+img_path = input("Enter local image path with animals (e.g. /content/animals.jpg): ").strip()
+
+# 3. Load image
+img = Image.open(img_path).convert("RGB")
+
+# 4. Run detection
+results = model(
+    img,
+    conf=0.4,   # confidence threshold
+    iou=0.5,    # IoU threshold
+    imgsz=960   # image size
+)[0]
+
+# 5. Show image with ALL detections (animals + others)
+annotated = results.plot()[:, :, ::-1]  # BGR -> RGB for matplotlib
+
+plt.figure(figsize=(8, 6))
+plt.imshow(annotated)
+plt.axis("off")
+plt.title("YOLOv8 Detection (animals + other objects)")
+plt.show()
+
+# 6. Filter only animal classes
+animal_classes = {
+    "cat",
+    "dog",
+    "bird",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe"
+}
+
+print("\nDetected animals (conf ≥ 0.4):")
+found_any = False
+for cls, conf in zip(results.boxes.cls, results.boxes.conf):
+    cls_name = model.names[int(cls)]
+    if cls_name in animal_classes:
+        found_any = True
+        print(f"- {cls_name} ({float(conf):.2f})")
+
+if not found_any:
+    print("No animals detected with the given confidence threshold.")
